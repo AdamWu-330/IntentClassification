@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""intent_classification_helper..py
+"""intent_classification_helper.py
 helper functions for the intent classification case study
 """
 
@@ -30,9 +30,11 @@ from keras.preprocessing.text import Tokenizer
 from keras import Sequential
 from keras.layers import Conv1D
 from keras.layers import GlobalMaxPooling1D
+from keras.layers import BatchNormalization
 from keras.layers import Dense
 from keras.layers import Dropout
 from keras.layers import Embedding
+from keras.layers import Flatten
 from keras.callbacks import ModelCheckpoint
 from keras import callbacks
 
@@ -133,18 +135,21 @@ def evaluate_model(model, name, x_test, y_test, num_features):
     eval_result.to_csv(eval_path, index=False)
 
 # cnn
-def cnn(x_train_cnn, y_train_cnn, batch_size=32, epochs=20, validation_data, feature_numbers):
+def cnn(x_train_cnn, y_train_cnn, batch_size, epochs, validation_data, feature_numbers):
   model = Sequential()
   #model.add(Embedding(input_dim=len(tokenizer.word_index) + 1, output_dim=64, input_length=input_length))
   #model.add(Conv1D(filters=512, kernel_size=3, activation='relu'))
-  model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(x_train_cnn.shape[1], 1)))
-
+  model.add(Conv1D(filters=512, kernel_size=3, activation='relu', input_shape=(x_train_cnn.shape[1], 1)))
+  model.add(Conv1D(filters=512, kernel_size=3, activation='relu'))
+  model.add(BatchNormalization())
   model.add(GlobalMaxPooling1D())
+
+  model.add(Flatten())
   model.add(Dense(units=256, activation='relu'))
   model.add(Dropout(0.2))
-  model.add(Dense(units=150, activation='sigmoid'))
+  model.add(Dense(units=150, activation='softmax'))
   model.compile(optimizer='adam', loss='CategoricalCrossentropy', metrics=['accuracy'])
-
+  model.summary()
   # path = '/content/drive/MyDrive/nlp_datasets/CLINC150/models/'
   # path = os.path.join(path, 'cnn_{}_features'.format(feature_numbers))
   # if not os.path.isdir(path):
