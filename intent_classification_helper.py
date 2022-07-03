@@ -37,49 +37,58 @@ from keras.layers import Embedding
 from keras.layers import Flatten
 from keras.callbacks import ModelCheckpoint
 from keras import callbacks
+from imblearn.over_sampling import RandomOverSampler
+
+def balance_class(df, feature_col, label_col):
+  ros = RandomOverSampler(random_state=0)
+  features_resampled, label_resampled = ros.fit_resample(df.drop(columns=[label_col], axis=1), 
+                                                          df.drop(columns=[feature_col], axis=1))
+
+  df = pd.concat([features_resampled, label_resampled], axis=1)
+  return df
 
 def preprocess_text(df, text_index, to_lowercase=True, remove_html_tags=True, remove_html_list=['<br />'], remove_nonword_chars=True, remove_stopwords=True, stowords_language='english', 
                         customized_stopwords=None, lemmatize=False):
-    print('\n')
-    print('Start text preprocessing: ')
-    text_lst = df[text_index].tolist()
-    if to_lowercase:
-      print('--------------------------')
-      print('Converting to lowercase...')
-      for i in range(len(text_lst)):
-        text_lst[i] = text_lst[i].strip().lower()
+  print('\n')
+  print('Start text preprocessing: ')
+  text_lst = df[text_index].tolist()
+  if to_lowercase:
+    print('--------------------------')
+    print('Converting to lowercase...')
+    for i in range(len(text_lst)):
+      text_lst[i] = text_lst[i].strip().lower()
 
-    if remove_html_tags:
-      print('--------------------------')
-      print('Removing html tags...')
-      for i in range(len(text_lst)):
-        text_lst[i] = re.sub(r'<br />', '', text_lst[i])
+  if remove_html_tags:
+    print('--------------------------')
+    print('Removing html tags...')
+    for i in range(len(text_lst)):
+      text_lst[i] = re.sub(r'<br />', '', text_lst[i])
 
-    if remove_nonword_chars:
-      print('--------------------------')
-      print('Removing nonword characters...')
-      for i in range(len(text_lst)):
-        text_lst[i] = re.sub(r'[\W]', ' ', text_lst[i])
+  if remove_nonword_chars:
+    print('--------------------------')
+    print('Removing nonword characters...')
+    for i in range(len(text_lst)):
+      text_lst[i] = re.sub(r'[\W]', ' ', text_lst[i])
+  
+  if remove_stopwords:
+    print('--------------------------')
+    print('Removing stopwords...')
+    if customized_stopwords==None:
+      nltk.download('stopwords')
+      nltk.download('wordnet')
+      stop_words = nltk.corpus.stopwords.words(stowords_language)
+    else:
+      stop_words = customized_stopwords
+    for i in range(len(text_lst)):
+      tokens = WordPunctTokenizer().tokenize(text_lst[i])
+      tokens_cleaned = [i for i in tokens if i not in stop_words]
+      text_lst[i] = ' '.join(tokens_cleaned)
     
-    if remove_stopwords:
-      print('--------------------------')
-      print('Removing stopwords...')
-      if customized_stopwords==None:
-        nltk.download('stopwords')
-        nltk.download('wordnet')
-        stop_words = nltk.corpus.stopwords.words(stowords_language)
-      else:
-        stop_words = customized_stopwords
-      for i in range(len(text_lst)):
-        tokens = WordPunctTokenizer().tokenize(text_lst[i])
-        tokens_cleaned = [i for i in tokens if i not in stop_words]
-        text_lst[i] = ' '.join(tokens_cleaned)
-      
-    text_df = pd.DataFrame(text_lst, columns=[text_index])
-    df[text_index] = text_df
-    
-    print('Text preprocessing completed.')
-    print('\n')
+  text_df = pd.DataFrame(text_lst, columns=[text_index])
+  df[text_index] = text_df
+  
+  print('Text preprocessing completed.')
+  print('\n')
 
 def random_foreset_classifier(num_features, n_estimators=100, max_depth=None):
   model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth)
@@ -94,11 +103,17 @@ def random_foreset_classifier(num_features, n_estimators=100, max_depth=None):
   return model
 
 # evaluate the model and save result 
-def evaluate_model(model, name, x_test, y_test, num_features):
+def evaluate_model(model, name, x_test, y_test, num_features, path, filename, unsupervised=False, prediction=None):
   print('evaluate the model: ', name)
-  prediction = model.predict(x_test)
-  prediction = np.argmax(prediction, axis=1)
-  y_true = np.argmax(y_test, axis=1)
+
+  if unsupervised == False and prediction == None:
+    prediction = model.predict(x_test)
+    prediction = np.argmax(prediction, axis=1)
+
+  if unsupervised:
+    y_true = y_test
+  else:
+    y_true = np.argmax(y_test, axis=1)
 
   accuracy_score_val = accuracy_score(y_true, prediction)
   balanced_accuracy = balanced_accuracy_score(y_true, prediction)
@@ -116,12 +131,7 @@ def evaluate_model(model, name, x_test, y_test, num_features):
   print("macro f1 score: ", macro_f1_score_val)
   #print("roc-auc: ", roc_auc)
   
-  path = '/content/drive/MyDrive/nlp_datasets/CLINC150/models/'
-  if not os.path.isdir(path):
-    os.mkdir(path)
-
-  #eval_path = os.path.join(path, 'evaluation.csv')
-  eval_path = os.path.join(path, 'evaluation_cnn.csv')
+  eval_path = os.path.join(path, filename)
   if not os.path.isfile(eval_path):
     eval_result = pd.DataFrame({'model': [name], 'accuracy score': [accuracy_score_val], 'balanced accuracy score': [balanced_accuracy],
                                 'weighted precision': [weighted_precision], 'weighted recall': [weighted_recall],
