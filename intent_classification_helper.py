@@ -90,16 +90,17 @@ def preprocess_text(df, text_index, to_lowercase=True, remove_html_tags=True, re
   print('Text preprocessing completed.')
   print('\n')
 
-def random_foreset_classifier(num_features, n_estimators=100, max_depth=None):
+def random_foreset_classifier(x_train, y_train, num_features, n_estimators=100, max_depth=None, saving=True, path=None):
   model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth)
   model.fit(x_train, y_train)
 
-  path = '/content/drive/MyDrive/nlp_datasets/CLINC150/models/'
-  if not os.path.isdir(path):
-    os.mkdir(path)
+  if saving:
+    # path = '/content/drive/MyDrive/nlp_datasets/CLINC150/models/'
+    if not os.path.isdir(path):
+      os.mkdir(path)
 
-  #joblib.dump(model, os.path.join(path, 'random_foreset_n_estimators={}_max_depth={}.json'.format(n_estimators, max_depth)))
-  joblib.dump(model, os.path.join(path, 'random_foreset_{}_features_n_estimators={}_max_depth={}.json'.format(num_features, n_estimators, max_depth)))
+    #joblib.dump(model, os.path.join(path, 'random_foreset_n_estimators={}_max_depth={}.json'.format(n_estimators, max_depth)))
+    joblib.dump(model, os.path.join(path, 'random_foreset_{}_features_n_estimators={}_max_depth={}.json'.format(num_features, n_estimators, max_depth)))
   return model
 
 # evaluate the model and save result 
