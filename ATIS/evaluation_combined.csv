@@ -1,0 +1,4 @@
+model,accuracy score,balanced accuracy score,weighted precision,weighted recall,weighted f1 score,macro f1 score,num_features
+random_forest_td-idf_40_features_n_estimators=150_max_depth=None,0.8725,0.4479380644385224,0.9005761695906433,0.8725,0.8686163549944778,0.416268614288354,40
+random_forest_w2v_features_40_n_estimators=150_max_depth=None,0.875,0.4586444685024798,0.9051881720430108,0.875,0.8737270367412141,0.4271966440995993,40
+random_forest_d2v_features_40_n_estimators=150_max_depth=None,0.86625,0.4603599704574055,0.895411792785854,0.86625,0.8679582880490209,0.4433517923846487,40
